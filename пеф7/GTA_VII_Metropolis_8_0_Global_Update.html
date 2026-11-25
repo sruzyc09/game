@@ -1,0 +1,1334 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GTA VII — Metropolis 8.0 Global Update</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#111;color:white;font-family:Arial;overflow:hidden}
+canvas#game{display:block;width:100vw;height:100vh}
+.panel{background:#111c24ed;border:1px solid #ffffff35;border-radius:10px;padding:12px}
+#hud{position:fixed;top:12px;left:12px;width:250px;display:grid;gap:8px;pointer-events:none}
+#brand{font-size:19px;font-weight:900;letter-spacing:1px}
+.gold{color:#ffda70}
+.green{color:#75e7a0}
+.small{font-size:12px;color:#c4d0d5;margin-top:5px}
+#stars{font-size:21px;color:#ffdc70;margin-top:5px}
+#missionName{font-weight:bold;color:#ffdc70}
+#missionDesc{font-size:12px;line-height:1.4;margin-top:5px;color:#ddd}
+#right{position:fixed;right:12px;top:12px;width:190px;font-size:12px;line-height:1.8;pointer-events:none}
+#map{position:fixed;right:12px;bottom:12px;width:150px;height:150px;border:2px solid #ffffff70;border-radius:8px}
+#toast{position:fixed;top:20%;left:50%;transform:translateX(-50%);background:#111d26;padding:12px 20px;border:1px solid #ffffff55;border-radius:10px;opacity:0;pointer-events:none;font-weight:bold}
+#help{position:fixed;bottom:12px;left:12px;background:#111c24d9;padding:9px;border-radius:8px;font-size:11px;color:#ddd}
+#console{display:none;position:fixed;top:8%;left:50%;transform:translateX(-50%);width:min(650px,94vw);height:min(440px,80vh);background:#080d12f5;border:1px solid #54d5a2;border-radius:12px;padding:15px;z-index:10;box-shadow:0 10px 50px #000}
+#consoleHeader{display:flex;justify-content:space-between;color:#66e5b0;font-weight:bold;margin-bottom:10px}
+#consoleLog{height:calc(100% - 90px);overflow:auto;font:13px monospace;white-space:pre-wrap;color:#d3e8dc}
+#consoleInput{width:100%;margin-top:10px;background:#17232a;color:#fff;border:1px solid #54d5a2;padding:12px;border-radius:7px;outline:none;font-size:14px}
+#shopPanel{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(360px,92vw);z-index:5}
+#shopPanel button{width:100%;padding:11px;margin-top:7px;background:#263c40;color:white;border:1px solid #ffffff40;border-radius:7px}
+#shopPanel button:hover{background:#38645a}
+#closeShop{background:#573b3b!important}
+#slots{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:5px;pointer-events:none}
+.slot{background:#111c24ed;border:1px solid #ffffff40;border-radius:8px;padding:7px;width:60px;text-align:center;font-size:10px}
+.slot strong{display:block;font-size:20px}
+.slot.active{border:2px solid #ffda70}
+#carHud{backdrop-filter:blur(8px)}
+@media(max-width:700px){#carHud{right:8px;bottom:100px;min-width:135px}}
+
+#inventoryPanel{display:none;position:fixed;z-index:8;left:50%;top:50%;transform:translate(-50%,-50%);width:min(820px,95vw);max-height:88vh;overflow:auto;background:#101a22f5;border:1px solid #78d8c0;border-radius:14px;padding:16px;box-shadow:0 18px 70px #000b}
+#inventoryHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+#inventoryHeader strong{font-size:18px;color:#ffe09a;letter-spacing:.5px}
+#inventoryHeader button,.inventoryActions button{background:#263c45;color:#fff;border:1px solid #ffffff40;border-radius:8px;padding:9px 13px}
+#inventoryBalance{color:#85e8ac;font-weight:bold;font-size:13px;margin-bottom:10px}
+#inventoryCategories{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-bottom:12px}
+.inventory-category{background:#1c2a33;color:#dce8eb;border:1px solid #ffffff25;border-radius:8px;padding:9px 5px;font-size:11px}
+.inventory-category.active{border-color:#ffd978;background:#3a3a2b;color:#ffe6a7}
+#inventoryItems{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;max-height:300px;overflow:auto;padding-right:3px}
+.inventory-item{display:flex;justify-content:space-between;gap:8px;text-align:left;background:#1b2932;color:#fff;border:1px solid #ffffff1f;border-radius:8px;padding:10px;font-size:12px}
+.inventory-item.active{border-color:#73d9b1;background:#263e3d}
+.inventory-item small{display:block;color:#a9bac2;margin-top:4px}
+#inventoryDetails{margin-top:12px;background:#1a2831;border:1px solid #ffffff20;border-radius:9px;padding:11px;min-height:60px;font-size:13px;color:#d7e2e6}
+.inventoryActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.inventoryActions button{flex:1;min-width:120px}
+.inventoryActions button.primary{background:#315b4c;border-color:#70d7a2}
+.inventoryActions button:disabled{opacity:.4}
+#inventoryHint{font-size:11px;color:#a9bac2;margin-top:9px}
+@media(max-width:600px){#inventoryCategories{grid-template-columns:repeat(2,minmax(0,1fr))}#inventoryItems{grid-template-columns:1fr}.slot{width:45px;padding:5px;font-size:9px}}
+
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="hud">
+ <div class="panel">
+  <div id="brand">GTA VII <span class="gold">METROPOLIS</span></div>
+  <div class="small">GLOBAL UPDATE 8.0 — 100 ITEMS & CITY LIFE</div>
+  <div class="green" id="money">$ 2,500</div>
+  <div class="small">Банк: <span id="bankMoney">$ 5,000</span></div>
+  <div id="stars">☆☆☆☆☆☆</div>
+  <div class="small" id="wantedText">Город спокоен</div>
+  <div class="small">Погода: <span id="weatherLabel">Ясно</span></div>
+  <div class="small">Район: <span id="districtLabel">Старый город</span></div>
+ </div>
+ <div class="panel">
+  <div id="location">Улица</div>
+  <div class="small">Здоровье: <span id="hp">100</span></div>
+  <div class="small">Энергия: <span id="energy">100</span></div>
+  <div class="small" id="weapon">Предмет: Кулаки</div>
+ </div>
+ <div class="panel">
+  <div class="small">ТЕКУЩЕЕ ЗАДАНИЕ</div>
+  <div id="missionName">Новое начало</div>
+  <div id="missionDesc">Доберись до отмеченного места.</div>
+  <div class="small" id="missionProgress"></div>
+ </div>
+</div>
+
+<div id="right" class="panel">
+ <b>УПРАВЛЕНИЕ</b><br>
+ WASD / стрелки — движение<br>SPACE — нитро в машине<br>
+ E — взаимодействие<br>
+ F — машина<br>
+ 1–5 — предметы<br>
+ ЛКМ — действие<br>
+ G — гараж<br>
+ R — энергия<br>
+ ~ — консоль разработчика<br>
+ I — каталог / инвентарь<br>
+ F5 — сохранить<br>
+ F6 — загрузить
+</div>
+
+<canvas id="map" width="150" height="150"></canvas>
+<div id="carHud" style="display:none;position:fixed;right:18px;bottom:115px;min-width:165px;background:#101b25df;border:1px solid #ffffff45;border-radius:10px;padding:10px;color:#fff;font:12px Arial;z-index:3;box-shadow:0 5px 22px #0008">
+ <div style="font-weight:bold;color:#ffdf8a;margin-bottom:5px">VEHICLE STATUS</div>
+ <div>Скорость: <b id="carSpeed">0</b> км/ч</div>
+ <div style="margin-top:5px">Топливо</div><div style="height:6px;background:#34434a;border-radius:5px;overflow:hidden"><div id="fuelBar" style="height:100%;width:100%;background:#65d69a"></div></div>
+ <div style="margin-top:5px">Состояние</div><div style="height:6px;background:#34434a;border-radius:5px;overflow:hidden"><div id="conditionBar" style="height:100%;width:100%;background:#70b8ee"></div></div>
+ <div style="margin-top:5px">Нитро</div><div style="height:6px;background:#34434a;border-radius:5px;overflow:hidden"><div id="nitroBar" style="height:100%;width:100%;background:#b18cff"></div></div>
+ <div style="color:#a9c8d3;margin-top:6px">SPACE — нитро</div>
+</div>
+<div id="toast"></div>
+<div id="help">I — каталог · E — действие · F — авто · ~ — консоль</div>
+
+<div id="slots">
+ <div class="slot active" id="s1">1<strong>✊</strong>Кулаки</div>
+ <div class="slot" id="s2">2<strong>●</strong>Пистолет</div>
+ <div class="slot" id="s3">3<strong>◉</strong>ПП</div>
+ <div class="slot" id="s4">4<strong>ϟ</strong>Винтовка</div>
+ <div class="slot" id="s5">5<strong>✹</strong>Импульс</div>
+</div>
+
+<div id="console">
+ <div id="consoleHeader">
+  <span>DEVELOPER CONSOLE — GTA VII</span>
+  <span>~ / ESC</span>
+ </div>
+ <div id="consoleLog">GTA VII Developer Console v8.0
+Напиши help, чтобы увидеть все команды.
+----------------------------------------</div>
+ <input id="consoleInput" placeholder="Введите команду..." autocomplete="off">
+</div>
+
+<div id="shopPanel" class="panel">
+ <h3 id="shopTitle">МАГАЗИН</h3>
+ <div class="small" id="shopInfo">Выбери действие:</div>
+ <button data-buy="health">Купить аптечку — $250</button>
+ <button data-buy="energy">Купить энергию — $150</button>
+ <button data-buy="armor">Купить защиту — $500</button>
+ <button id="robButton" data-action="rob">Ограбить кассу</button>
+ <button id="closeShop" data-action="close">Закрыть</button>
+</div>
+
+
+<div id="inventoryPanel" class="panel">
+ <div id="inventoryHeader">
+  <strong>METROPOLIS MARKET & INVENTORY</strong>
+  <button id="inventoryClose">✕ Закрыть</button>
+ </div>
+ <div id="inventoryBalance">Наличные: $2,500 · Предметов: 0</div>
+ <div id="inventoryCategories"></div>
+ <div id="inventoryItems"></div>
+ <div id="inventoryDetails">Выбери категорию и предмет.</div>
+ <div class="inventoryActions">
+  <button id="inventoryBuy" class="primary">Купить</button>
+  <button id="inventoryUse">Использовать</button>
+  <button id="inventorySell">Продать</button>
+ </div>
+ <div id="inventoryHint">I — открыть каталог и инвентарь · Покупка доступна в любом районе. Продажа возвращает 60% стоимости.</div>
+</div>
+
+<script>
+(()=>{
+"use strict";
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+const map=document.getElementById("map");
+const mc=map.getContext("2d");
+let W=innerWidth,H=innerHeight;
+let DPR=Math.min(devicePixelRatio||1,2);
+
+function resize(){
+ W=innerWidth;H=innerHeight;
+ canvas.width=W*DPR;canvas.height=H*DPR;
+ ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+addEventListener("resize",resize);resize();
+
+const WORLD=3000,ROAD=110;
+const keys={};
+const camera={x:0,y:0};
+const player={x:250,y:300,vx:0,vy:0,angle:0,hp:100,armor:0};
+let money=2500,bankMoney=5000,energy=100,wanted=0;
+let weapon=1,clock=0,night=false;
+let nitro=100,nitroActive=false;
+let weather="clear",weatherClock=0;
+const rainDrops=Array.from({length:150},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,len:8+Math.random()*13,speed:7+Math.random()*8}));
+let inCar=false,car=null;
+let inside=null;
+let interiorPlayer={x:W/2,y:H*.78,speed:3};
+let consoleOpen=false,shopOpen=false;
+let toastTimer=0,lastCrime=0;
+let alwaysDay=false,alwaysNight=false,godMode=false;
+let playerSpeed=2.2,missionIndex=0,missionProgress=0;
+let robberyTimer=0,robberyActive=false;
+let missionPackages=[];
+
+const buildings=[
+ {id:"shop",name:"24/7 SUPERMARKET",type:"shop",x:700,y:240,w:150,h:120,color:"#537b68",door:"bottom"},
+ {id:"bank",name:"CITY BANK",type:"bank",x:1350,y:240,w:180,h:130,color:"#667b91",door:"bottom"},
+ {id:"garage",name:"AUTO GARAGE",type:"garage",x:2100,y:240,w:180,h:130,color:"#77736b",door:"bottom"},
+ {id:"home",name:"APARTMENT",type:"home",x:700,y:1050,w:150,h:130,color:"#806d83",door:"bottom"},
+ {id:"clothes",name:"CLOTHING STORE",type:"clothes",x:1350,y:1050,w:150,h:120,color:"#98754e",door:"bottom"},
+ {id:"cafe",name:"CITY CAFE",type:"cafe",x:2100,y:1050,w:160,h:120,color:"#956a56",door:"bottom"},
+ {id:"hospital",name:"HOSPITAL",type:"hospital",x:700,y:1900,w:180,h:130,color:"#75918e",door:"bottom"},
+ {id:"club",name:"NIGHT CLUB",type:"club",x:1350,y:1900,w:170,h:130,color:"#735d92",door:"bottom"},
+ {id:"warehouse",name:"WAREHOUSE",type:"warehouse",x:2100,y:1900,w:190,h:140,color:"#777c80",door:"bottom"}
+];
+
+// Дополнительная застройка: офисы, жилые дома, магазины и городские объекты.
+const cityNames=[
+ ["NORTH RESIDENCE","#887b70"],["METRO OFFICE","#607b8c"],["GREEN MARKET","#718b70"],
+ ["RIVER HOTEL","#897b91"],["CITY PHARMACY","#71918d"],["PIXEL ARCADE","#806b91"],
+ ["BOOK HOUSE","#987d5e"],["URBAN LOFTS","#6f7f8c"],["CENTRAL PLAZA","#9a8b72"],
+ ["SUNSET APARTMENTS","#927b72"],["NOVA STUDIOS","#6c8490"],["PARKSIDE CAFE","#9a765e"],
+ ["CITY CINEMA","#756d8c"],["DESIGN HOUSE","#8a8b79"],["METRO DEPOT","#777f83"],
+ ["WEST TOWER","#627889"],["EAST RESIDENCE","#8a7771"],["CORNER STORE","#778d72"],
+ ["ART CENTER","#8b7b91"],["TECH HUB","#657d8d"],["OLD TOWN HOTEL","#927c68"],
+ ["FITNESS CLUB","#6f887f"],["FOOD HALL","#94765d"],["CITY LIBRARY","#7b8790"],
+ ["SKYLINE BLOCK","#718090"]
+];
+const citySlots=[];
+for(let row=0;row<5;row++)for(let col=0;col<5;col++){
+ const i=row*5+col;
+ citySlots.push({x:[350,900,1400,1900,2400][col]+(row%2?25:0),y:[390,900,1400,1950,2450][row]+(col%2?18:0)});
+}
+for(let i=0;i<citySlots.length;i++){
+ const pos=citySlots[i],w=125+(i%3)*12,h=100+(i%4)*8;
+ const overlaps=buildings.some(b=>pos.x<b.x+b.w+24&&pos.x+w+24>b.x&&pos.y<b.y+b.h+24&&pos.y+h+24>b.y);
+ if(!overlaps){
+  const item=cityNames[i];
+  buildings.push({id:"city_"+i,name:item[0],type:"city",x:pos.x,y:pos.y,w,h,color:item[1],door:"bottom",variant:i%4});
+ }
+}
+
+// Новые кварталы: заполняем свободные участки, не перекрывая дороги и здания.
+const expansionNames=["ORBITAL TOWER","HARBOR RESIDENCE","NEON HOTEL","CIVIC CENTER","GRAND MARKET","NORTH CLINIC","RIVERSIDE LOFTS","MOTION STUDIOS","SKY GARDEN","METRO MALL","ECHO APARTMENTS","WESTSIDE OFFICE","NOVA HOTEL","ART DISTRICT HUB"];
+const expansionColors=["#607f91","#8b7772","#6b718f","#8b896f","#718b78","#78928e","#89758c"];
+let expansionCount=0;
+for(let y=90;y<2820&&expansionCount<14;y+=285){
+ for(let x=90;x<2820&&expansionCount<14;x+=285){
+  const w=104+(expansionCount%3)*9,h=82+(expansionCount%4)*7;
+  const roadClear=[0,1,2,3,4,5].every(i=>Math.abs(x+w/2-roadAt(i))>112&&Math.abs(y+h/2-roadAt(i))>112);
+  const free=!buildings.some(b=>x<b.x+b.w+35&&x+w+35>b.x&&y<b.y+b.h+35&&y+h+35>b.y);
+  if(roadClear&&free){
+   const n=expansionNames[expansionCount];
+   buildings.push({id:"district_"+expansionCount,name:n,type:"city",x,y,w,h,color:expansionColors[expansionCount%expansionColors.length],door:"bottom",variant:(expansionCount+1)%4});
+   expansionCount++;
+  }
+ }
+}
+
+const cars=[];
+const traffic=[];
+const people=[];
+const police=[];
+const helicopters=[];
+const bullets=[];
+const particles=[];
+const pickups=[];
+const trees=[];
+
+const rand=(a,b)=>a+Math.random()*(b-a);
+const choose=a=>a[Math.floor(Math.random()*a.length)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+
+function roadAt(n){return 250+n*500}
+function toast(s){
+ const el=document.getElementById("toast");
+ el.textContent=s;el.style.opacity=1;toastTimer=150;
+}
+function blocked(x,y,r=10){
+ if(x<r||y<r||x>WORLD-r||y>WORLD-r)return true;
+ for(const b of buildings){
+  if(x+r>b.x&&x-r<b.x+b.w&&y+r>b.y&&y-r<b.y+b.h)return true;
+ }
+ return false;
+}
+function makeCar(x,y,a,color){
+ return{x,y,angle:a,color,speed:0,fuel:100,condition:100};
+}
+
+for(let i=0;i<30;i++){
+ const vertical=Math.random()<.5;
+ const n=Math.floor(rand(0,6));
+ const x=vertical?roadAt(n)+choose([-70,70]):rand(0,WORLD);
+ const y=vertical?rand(0,WORLD):roadAt(n)+choose([-70,70]);
+ cars.push(makeCar(x,y,vertical?Math.PI/2:0,choose(["#b4bfc4","#b84d42","#416e91","#c4a45d","#526b5b"])));
+}
+for(let i=0;i<25;i++){
+ const vertical=Math.random()<.5,n=Math.floor(rand(0,6));
+ traffic.push({x:vertical?roadAt(n)+choose([-22,22]):rand(0,WORLD),
+ y:vertical?rand(0,WORLD):roadAt(n)+choose([-22,22]),
+ vertical,speed:rand(1,2),color:choose(["#c5c5c5","#b64e45","#47718a","#d4b86e"])});
+}
+for(let i=0;i<70;i++){
+ people.push({x:rand(50,WORLD-50),y:rand(50,WORLD-50),
+ hp:100,active:true,color:choose(["#4e91a9","#a76c54","#667d61","#b4a06a","#7c6b99"]),
+ dir:rand(0,6),speed:rand(.2,.5)});
+}
+for(let i=0;i<100;i++)trees.push({x:rand(0,WORLD),y:rand(0,WORLD),r:rand(7,13)});
+const streetLights=[];
+for(let i=0;i<110;i++){
+ const vertical=Math.random()<.5,n=Math.floor(rand(0,6)),along=rand(80,WORLD-80);
+ streetLights.push({x:vertical?roadAt(n)+choose([-94,94]):along,y:vertical?along:roadAt(n)+choose([-94,94])});
+}
+for(let i=0;i<25;i++)pickups.push({x:rand(100,WORLD-100),y:rand(100,WORLD-100),taken:false});
+
+// ГЛОБАЛЬНЫЙ КАТАЛОГ: 10 категорий × 10 уникальных предметов = 100 предметов.
+const itemCatalog=[{"id":"food","label":"🍔 ЕДА","items":[{"id":"food_1","name":"Бургер","price":180,"desc":"Восстанавливает здоровье","power":12},{"id":"food_2","name":"Пицца","price":240,"desc":"Восстанавливает здоровье","power":18},{"id":"food_3","name":"Сэндвич","price":110,"desc":"Небольшое восстановление","power":8},{"id":"food_4","name":"Тако","price":160,"desc":"Восстанавливает здоровье","power":11},{"id":"food_5","name":"Хот-дог","price":130,"desc":"Восстанавливает здоровье","power":9},{"id":"food_6","name":"Салат","price":150,"desc":"Лёгкое восстановление","power":10},{"id":"food_7","name":"Шаурма","price":210,"desc":"Сытная еда","power":16},{"id":"food_8","name":"Пончик","price":90,"desc":"Небольшое восстановление","power":6},{"id":"food_9","name":"Суши","price":280,"desc":"Восстанавливает здоровье","power":20},{"id":"food_10","name":"Большой набор","price":350,"desc":"Максимальное восстановление еды","power":25}]},{"id":"drinks","label":"🥤 НАПИТКИ","items":[{"id":"drinks_1","name":"Вода","price":40,"desc":"Восстанавливает энергию","power":10},{"id":"drinks_2","name":"Кола","price":75,"desc":"Восстанавливает энергию","power":15},{"id":"drinks_3","name":"Энергетик","price":160,"desc":"Сильно восстанавливает энергию","power":28},{"id":"drinks_4","name":"Кофе","price":120,"desc":"Восстанавливает энергию","power":22},{"id":"drinks_5","name":"Чай","price":65,"desc":"Восстанавливает энергию","power":13},{"id":"drinks_6","name":"Лимонад","price":95,"desc":"Восстанавливает энергию","power":18},{"id":"drinks_7","name":"Изотоник","price":180,"desc":"Энергия и немного нитро","power":30},{"id":"drinks_8","name":"Смузи","price":170,"desc":"Восстанавливает энергию","power":26},{"id":"drinks_9","name":"Холодный чай","price":105,"desc":"Восстанавливает энергию","power":20},{"id":"drinks_10","name":"Большая бутылка","price":220,"desc":"Много энергии","power":40}]},{"id":"medical","label":"🩹 МЕДИЦИНА","items":[{"id":"medical_1","name":"Бинт","price":120,"desc":"Восстанавливает здоровье","power":12},{"id":"medical_2","name":"Аптечка S","price":250,"desc":"Восстанавливает здоровье","power":25},{"id":"medical_3","name":"Аптечка M","price":420,"desc":"Восстанавливает здоровье","power":40},{"id":"medical_4","name":"Аптечка L","price":650,"desc":"Восстанавливает здоровье","power":60},{"id":"medical_5","name":"Медицинский набор","price":900,"desc":"Сильно восстанавливает здоровье","power":85},{"id":"medical_6","name":"Защитный жилет","price":700,"desc":"Восстанавливает броню","power":35},{"id":"medical_7","name":"Усиленный жилет","price":1100,"desc":"Восстанавливает броню","power":55},{"id":"medical_8","name":"Медицинский спрей","price":180,"desc":"Небольшое лечение","power":18},{"id":"medical_9","name":"Реанимационный набор","price":1400,"desc":"Большое восстановление здоровья","power":100},{"id":"medical_10","name":"Комплект защиты","price":1800,"desc":"Полностью восстанавливает броню","power":100}]},{"id":"clothes","label":"👕 ОДЕЖДА","items":[{"id":"clothes_1","name":"Белая футболка","price":120,"desc":"Новый внешний вид","power":1},{"id":"clothes_2","name":"Чёрная футболка","price":120,"desc":"Новый внешний вид","power":1},{"id":"clothes_3","name":"Красная худи","price":280,"desc":"Новый внешний вид","power":1},{"id":"clothes_4","name":"Синяя худи","price":280,"desc":"Новый внешний вид","power":1},{"id":"clothes_5","name":"Кожаная куртка","price":650,"desc":"Новый внешний вид","power":1},{"id":"clothes_6","name":"Джинсовая куртка","price":520,"desc":"Новый внешний вид","power":1},{"id":"clothes_7","name":"Спортивный костюм","price":780,"desc":"Новый внешний вид","power":1},{"id":"clothes_8","name":"Городская куртка","price":900,"desc":"Новый внешний вид","power":1},{"id":"clothes_9","name":"Премиум-костюм","price":1500,"desc":"Новый внешний вид","power":1},{"id":"clothes_10","name":"Неоновый комплект","price":1900,"desc":"Новый внешний вид","power":1}]},{"id":"electronics","label":"📱 ЭЛЕКТРОНИКА","items":[{"id":"electronics_1","name":"Смартфон","price":600,"desc":"Продвинутый гаджет: бонус к наличным","power":150},{"id":"electronics_2","name":"Планшет","price":950,"desc":"Гаджет: бонус к наличным","power":220},{"id":"electronics_3","name":"Ноутбук","price":1600,"desc":"Гаджет: бонус к наличным","power":350},{"id":"electronics_4","name":"Умные часы","price":480,"desc":"Гаджет: бонус к наличным","power":120},{"id":"electronics_5","name":"Наушники","price":300,"desc":"Гаджет: бонус к наличным","power":80},{"id":"electronics_6","name":"Фотоаппарат","price":1200,"desc":"Гаджет: бонус к наличным","power":260},{"id":"electronics_7","name":"Портативная консоль","price":850,"desc":"Гаджет: бонус к наличным","power":190},{"id":"electronics_8","name":"Дрон-игрушка","price":1400,"desc":"Гаджет: бонус к наличным","power":300},{"id":"electronics_9","name":"Экшн-камера","price":1050,"desc":"Гаджет: бонус к наличным","power":230},{"id":"electronics_10","name":"Премиум-гаджет","price":2200,"desc":"Большой бонус к наличным","power":500}]},{"id":"tools","label":"🔧 ИНСТРУМЕНТЫ","items":[{"id":"tools_1","name":"Отвёртка","price":90,"desc":"Небольшой ремонт машины","power":8},{"id":"tools_2","name":"Набор ключей","price":220,"desc":"Ремонт машины","power":18},{"id":"tools_3","name":"Домкрат","price":350,"desc":"Ремонт машины","power":25},{"id":"tools_4","name":"Компрессор","price":480,"desc":"Ремонт машины","power":35},{"id":"tools_5","name":"Набор механика","price":650,"desc":"Ремонт машины","power":48},{"id":"tools_6","name":"Портативный насос","price":170,"desc":"Небольшой ремонт машины","power":12},{"id":"tools_7","name":"Сварочный комплект","price":900,"desc":"Серьёзный ремонт машины","power":65},{"id":"tools_8","name":"Диагностический сканер","price":1200,"desc":"Ремонт и диагностика","power":80},{"id":"tools_9","name":"Профессиональный набор","price":1600,"desc":"Большой ремонт машины","power":95},{"id":"tools_10","name":"Мастерская в кейсе","price":2100,"desc":"Полный ремонт машины","power":100}]},{"id":"carparts","label":"🚗 АВТОЗАПЧАСТИ","items":[{"id":"carparts_1","name":"Свечи зажигания","price":180,"desc":"Улучшает состояние автомобиля","power":10},{"id":"carparts_2","name":"Масляный фильтр","price":140,"desc":"Улучшает состояние автомобиля","power":8},{"id":"carparts_3","name":"Аккумулятор","price":520,"desc":"Улучшает состояние автомобиля","power":22},{"id":"carparts_4","name":"Тормозные колодки","price":380,"desc":"Улучшает состояние автомобиля","power":18},{"id":"carparts_5","name":"Шины Street","price":750,"desc":"Улучшает состояние автомобиля","power":30},{"id":"carparts_6","name":"Спортивные шины","price":1200,"desc":"Улучшает состояние автомобиля","power":42},{"id":"carparts_7","name":"Турбокомплект","price":1900,"desc":"Улучшает состояние и нитро","power":55},{"id":"carparts_8","name":"Топливный бак","price":900,"desc":"Заправляет автомобиль","power":50},{"id":"carparts_9","name":"Гоночная подвеска","price":1600,"desc":"Улучшает состояние автомобиля","power":60},{"id":"carparts_10","name":"Двигатель V8","price":4200,"desc":"Мощный ремонт и улучшение","power":100}]},{"id":"collectibles","label":"💎 КОЛЛЕКЦИОННОЕ","items":[{"id":"collectibles_1","name":"Старая монета","price":160,"desc":"Коллекционный предмет для продажи","power":1},{"id":"collectibles_2","name":"Винтажная камера","price":420,"desc":"Коллекционный предмет для продажи","power":1},{"id":"collectibles_3","name":"Редкий комикс","price":280,"desc":"Коллекционный предмет для продажи","power":1},{"id":"collectibles_4","name":"Мини-фигурка","price":190,"desc":"Коллекционный предмет для продажи","power":1},{"id":"collectibles_5","name":"Кристалл","price":550,"desc":"Коллекционный предмет для продажи","power":1},{"id":"collectibles_6","name":"Старинные часы","price":900,"desc":"Коллекционный предмет для продажи","power":1},{"id":"collectibles_7","name":"Золотой жетон","price":750,"desc":"Коллекционный предмет для продажи","power":1},{"id":"collectibles_8","name":"Редкий винил","price":640,"desc":"Коллекционный предмет для продажи","power":1},{"id":"collectibles_9","name":"Арт-постер","price":350,"desc":"Коллекционный предмет для продажи","power":1},{"id":"collectibles_10","name":"Алмазная статуэтка","price":2500,"desc":"Очень ценный предмет для продажи","power":1}]},{"id":"home","label":"🛋️ ДЛЯ ДОМА","items":[{"id":"home_1","name":"Настольная лампа","price":180,"desc":"Восстанавливает энергию","power":8},{"id":"home_2","name":"Комнатное растение","price":220,"desc":"Восстанавливает энергию","power":10},{"id":"home_3","name":"Настенные часы","price":260,"desc":"Восстанавливает энергию","power":12},{"id":"home_4","name":"Кресло","price":650,"desc":"Восстанавливает энергию","power":22},{"id":"home_5","name":"Книжная полка","price":480,"desc":"Восстанавливает энергию","power":18},{"id":"home_6","name":"Настольный компьютер","price":1100,"desc":"Восстанавливает энергию","power":30},{"id":"home_7","name":"Телевизор","price":1300,"desc":"Восстанавливает энергию","power":35},{"id":"home_8","name":"Диван","price":1500,"desc":"Восстанавливает энергию","power":40},{"id":"home_9","name":"Игровая зона","price":2200,"desc":"Восстанавливает энергию","power":55},{"id":"home_10","name":"Премиум-интерьер","price":3500,"desc":"Полностью восстанавливает энергию","power":100}]},{"id":"documents","label":"📄 ДОКУМЕНТЫ","items":[{"id":"documents_1","name":"Проездной","price":100,"desc":"Игровой денежный бонус","power":35},{"id":"documents_2","name":"Карта жителя","price":180,"desc":"Игровой денежный бонус","power":60},{"id":"documents_3","name":"Абонемент клуба","price":250,"desc":"Игровой денежный бонус","power":80},{"id":"documents_4","name":"Карта лояльности","price":320,"desc":"Игровой денежный бонус","power":100},{"id":"documents_5","name":"Сертификат доставки","price":400,"desc":"Игровой денежный бонус","power":130},{"id":"documents_6","name":"Лицензия водителя","price":550,"desc":"Игровой денежный бонус","power":160},{"id":"documents_7","name":"Пропуск в бизнес-центр","price":700,"desc":"Игровой денежный бонус","power":200},{"id":"documents_8","name":"Диплом механика","price":850,"desc":"Игровой денежный бонус","power":240},{"id":"documents_9","name":"VIP-карта","price":1200,"desc":"Игровой денежный бонус","power":350},{"id":"documents_10","name":"Золотой пропуск","price":1800,"desc":"Крупный игровой денежный бонус","power":500}]}];
+const inventory={};
+let inventoryOpen=false,selectedCategory="food",selectedItemId="food_1",outfitColor="#287b9a";
+const categoryMap=Object.fromEntries(itemCatalog.map(c=>[c.id,c]));
+const itemMap=Object.fromEntries(itemCatalog.flatMap(c=>c.items.map(i=>[i.id,{...i,category:c.id,categoryLabel:c.label}])));
+function itemCount(){return Object.values(inventory).reduce((a,n)=>a+(Number.isFinite(n)?n:0),0)}
+function renderInventory(){
+ const cats=document.getElementById("inventoryCategories");
+ const items=document.getElementById("inventoryItems");
+ const details=document.getElementById("inventoryDetails");
+ cats.innerHTML=itemCatalog.map(c=>`<button class="inventory-category ${c.id===selectedCategory?"active":""}" data-category="${c.id}">${c.label} · ${c.items.reduce((n,i)=>n+(inventory[i.id]||0),0)}</button>`).join("");
+ const cat=categoryMap[selectedCategory]||itemCatalog[0];
+ items.innerHTML=cat.items.map(i=>`<button class="inventory-item ${i.id===selectedItemId?"active":""}" data-item="${i.id}"><span>${i.name}<small>${i.desc}</small></span><span> $${i.price}<small>×${inventory[i.id]||0}</small></span></button>`).join("");
+ const item=itemMap[selectedItemId];
+ if(item){
+  details.innerHTML=`<b>${item.name}</b> · $${item.price}<br>${item.desc}<br><span style="color:#91dcb8">В инвентаре: ${inventory[item.id]||0}</span>`;
+ }else details.textContent="Выбери предмет.";
+ document.getElementById("inventoryBalance").textContent=`Наличные: $${money.toLocaleString()} · Предметов: ${itemCount()}`;
+ document.getElementById("inventoryBuy").disabled=!item;
+ document.getElementById("inventoryUse").disabled=!item||!(inventory[item.id]>0)||item.category==="collectibles";
+ document.getElementById("inventorySell").disabled=!item||!(inventory[item.id]>0);
+}
+function toggleInventory(force){
+ inventoryOpen=typeof force==="boolean"?force:!inventoryOpen;
+ document.getElementById("inventoryPanel").style.display=inventoryOpen?"block":"none";
+ if(inventoryOpen){for(const k in keys)keys[k]=false;renderInventory()}
+}
+function inventoryBuy(){
+ const item=itemMap[selectedItemId];if(!item)return;
+ if(money<item.price){toast("Недостаточно денег");return}
+ money-=item.price;inventory[item.id]=(inventory[item.id]||0)+1;
+ toast("Куплено: "+item.name);renderInventory();updateHUD();
+}
+function inventorySell(){
+ const item=itemMap[selectedItemId];if(!item||!(inventory[item.id]>0))return;
+ inventory[item.id]--;if(inventory[item.id]<=0)delete inventory[item.id];
+ const value=Math.floor(item.price*.6);money+=value;
+ toast("Продано: "+item.name+" · +$"+value);renderInventory();updateHUD();
+}
+function inventoryUse(){
+ const item=itemMap[selectedItemId];if(!item||!(inventory[item.id]>0))return;
+ let message="";
+ switch(item.category){
+  case "food":
+   if(player.hp>=100){toast("Здоровье уже полное");return}
+   player.hp=Math.min(100,player.hp+item.power);energy=Math.min(100,energy+Math.ceil(item.power*.12));message=item.name+" использован";
+   break;
+  case "drinks":
+   if(energy>=100&&nitro>=100){toast("Энергия и нитро уже полные");return}
+   energy=Math.min(100,energy+item.power);nitro=Math.min(100,nitro+Math.ceil(item.power*.6));message=item.name+" выпит";
+   break;
+  case "medical":
+   if(player.hp>=100&&player.armor>=100){toast("Здоровье и броня уже полные");return}
+   player.hp=Math.min(100,player.hp+item.power);
+   player.armor=Math.min(100,player.armor+Math.ceil(item.power*.5));message=item.name+" применён";
+   break;
+  case "clothes":
+   outfitColor=["#e8e8e8","#252a30","#a64242","#426e9b","#594332","#5b7584","#3d5e4b","#8a684d","#b5a16a","#57a9a5"][Number(item.id.split("_")[1])-1];
+   message="Одежда изменена: "+item.name;
+   break;
+  case "electronics":
+   money+=item.power;message="Гаджет активирован · бонус +$"+item.power;
+   break;
+  case "tools":{
+   const target=(inCar&&car)?car:nearestCar();
+   if(!target||dist(target,player)>180){toast("Подойди к автомобилю, чтобы использовать инструмент");return}
+   target.condition=Math.min(100,target.condition+item.power);
+   message="Ремонт выполнен: "+item.name;
+   break;
+  }
+  case "carparts":{
+   const target=(inCar&&car)?car:nearestCar();
+   if(!target||dist(target,player)>180){toast("Подойди к автомобилю, чтобы установить запчасть");return}
+   target.condition=Math.min(100,target.condition+item.power);
+   target.fuel=Math.min(100,target.fuel+Math.ceil(item.power*.45));
+   nitro=Math.min(100,nitro+Math.ceil(item.power*.3));
+   message="Установлено: "+item.name;
+   break;
+  }
+  case "home":
+   if(energy>=100){toast("Энергия уже полная");return}
+   energy=Math.min(100,energy+item.power);message="Использовано для отдыха: "+item.name;
+   break;
+  case "documents":
+   bankMoney+=item.power;message="Документ обработан · на счёт +$"+item.power;
+   break;
+  case "collectibles":
+   toast("Коллекционные предметы можно только продать");return;
+ }
+ inventory[item.id]--;if(inventory[item.id]<=0)delete inventory[item.id];
+ toast(message);renderInventory();updateHUD();
+}
+document.getElementById("inventoryCategories").addEventListener("click",e=>{
+ const b=e.target.closest("[data-category]");if(!b)return;
+ selectedCategory=b.dataset.category;selectedItemId=categoryMap[selectedCategory].items[0].id;renderInventory();
+});
+document.getElementById("inventoryItems").addEventListener("click",e=>{
+ const b=e.target.closest("[data-item]");if(!b)return;
+ selectedItemId=b.dataset.item;renderInventory();
+});
+document.getElementById("inventoryBuy").addEventListener("click",inventoryBuy);
+document.getElementById("inventoryUse").addEventListener("click",inventoryUse);
+document.getElementById("inventorySell").addEventListener("click",inventorySell);
+document.getElementById("inventoryClose").addEventListener("click",()=>toggleInventory(false));
+
+
+// ЗАДАНИЯ
+const missions=[
+ {name:"1. Первые шаги",desc:"Найди супермаркет и зайди внутрь.",type:"enter",target:"shop",reward:500},
+ {name:"2. Потерянные посылки",desc:"Найди 3 посылки внутри отмеченных зданий.",type:"packages",reward:900},
+ {name:"3. Встреча в банке",desc:"Посети CITY BANK и поговори с сотрудником.",type:"bank",reward:1200},
+ {name:"4. Автомеханик",desc:"Зайди в гараж и взаимодействуй с механиком.",type:"garage",reward:1500},
+ {name:"5. Последняя доставка",desc:"Забери посылку на складе.",type:"warehouse",reward:2500}
+];
+function makePackages(){
+ missionPackages=[
+  {building:"shop",x:0,y:0,taken:false},
+  {building:"cafe",x:0,y:0,taken:false},
+  {building:"warehouse",x:0,y:0,taken:false}
+ ];
+}
+makePackages();
+
+function currentMission(){return missions[missionIndex]}
+function updateMissionHUD(){
+ const m=currentMission();
+ if(!m){
+  document.getElementById("missionName").textContent="Сюжет пройден!";
+  document.getElementById("missionDesc").textContent="Ты выполнил все задания.";
+  document.getElementById("missionProgress").textContent="5 / 5";
+  return;
+ }
+ document.getElementById("missionName").textContent=m.name;
+ document.getElementById("missionDesc").textContent=m.desc;
+ document.getElementById("missionProgress").textContent=
+  m.type==="packages"?missionProgress+" / 3":"Задание "+(missionIndex+1)+" из 5";
+}
+function completeMission(){
+ const m=currentMission();if(!m)return;
+ money+=m.reward;
+ toast("ЗАДАНИЕ ВЫПОЛНЕНО! +$"+m.reward);
+ missionIndex++;missionProgress=0;
+ updateMissionHUD();
+}
+function checkMissionBuilding(b){
+ const m=currentMission();if(!m)return;
+ if(m.type==="enter"&&b.id===m.target)completeMission();
+ if(m.type==="bank"&&b.id==="bank")toast("Найди сотрудника банка и нажми E");
+ if(m.type==="garage"&&b.id==="garage")toast("Нажми E рядом с механиком");
+ if(m.type==="warehouse"&&b.id==="warehouse"){
+  toast("Найди посылку внутри склада");
+ }
+}
+function checkPackage(){
+ const m=currentMission();
+ if(!m||!inside)return;
+ if(m.type==="packages"){
+  const p=missionPackages.find(p=>p.building===inside.id&&!p.taken);
+  if(!p){toast("В этом здании посылки больше нет");return}
+  p.taken=true;missionProgress++;
+  toast("ПОСЫЛКА НАЙДЕНА! "+missionProgress+"/3");
+  if(missionProgress>=3)completeMission();
+  return;
+ }
+ if(m.type==="warehouse"&&inside.id==="warehouse"){
+  toast("ПОСЛЕДНЯЯ ПОСЫЛКА НАЙДЕНА");
+  completeMission();
+  return;
+ }
+ toast("Здесь нет нужной посылки");
+}
+
+// ВХОД В ЗДАНИЯ
+function enterBuilding(b){
+ inside=b;
+ player.vx=0;player.vy=0;
+ interiorPlayer.x=W/2;
+ interiorPlayer.y=H*.68;
+ toast("Вход: "+b.name);
+ checkMissionBuilding(b);
+}
+function exitBuilding(){
+ if(!inside)return;
+ inside=null;
+ shopOpen=false;
+ document.getElementById("shopPanel").style.display="none";
+ player.x=insideExit.x;player.y=insideExit.y;
+ player.vx=0;player.vy=0;
+ toast("Вы вышли на улицу");
+}
+let insideExit={x:250,y:350};
+function findNearbyBuilding(){
+ let best=null,d=85;
+ for(const b of buildings){
+  const door={x:b.x+b.w/2,y:b.y+b.h+12};
+  const z=dist(player,door);
+  if(z<d){d=z;best=b}
+ }
+ return best;
+}
+function interactBuilding(){
+ if(inside){interactInside();return}
+ if(inCar){toast("Сначала выйди из автомобиля");return}
+ const b=findNearbyBuilding();
+ if(b){
+  insideExit={x:b.x+b.w/2,y:b.y+b.h+25};
+  player.x=insideExit.x;player.y=insideExit.y;
+  enterBuilding(b);return;
+ }
+ toast("Подойди к зелёной отметке у двери");
+}
+
+function interiorPoint(){
+ if(!inside)return {x:0,y:0};
+ if(inside.id==="shop")return {x:W*.72,y:H*.65};
+ if(inside.id==="cafe")return {x:W*.30,y:H*.65};
+ if(inside.id==="warehouse")return {x:W*.50,y:H*.65};
+ return {x:W*.5,y:H*.55};
+}
+function interactInside(){
+ if(!inside)return;
+ if(interiorPlayer.y>H-145 && Math.abs(interiorPlayer.x-W/2)<100){
+  exitBuilding();return;
+ }
+ if(currentMission()?.type==="packages" && ["shop","cafe","warehouse"].includes(inside.id)){
+  const p=interiorPoint();
+  if(dist(interiorPlayer,p)<65){checkPackage();return}
+ }
+ if(currentMission()?.type==="warehouse" && inside.id==="warehouse"){
+  const p=interiorPoint();
+  if(dist(interiorPlayer,p)<65){checkPackage();return}
+ }
+ if(inside.type==="shop"||inside.type==="clothes"||inside.type==="cafe"){
+  openShop(inside);return;
+ }
+ if(inside.type==="bank"){bankAction();return}
+ if(inside.type==="garage"){
+  if(money<350){toast("Для полного обслуживания нужно $350");return}
+  money-=350;player.hp=100;energy=100;
+  const serviceCar=car||nearestCar();
+  if(serviceCar&&dist(serviceCar,player)<90){serviceCar.fuel=100;serviceCar.condition=100;serviceCar.speed=0;toast("Авто отремонтировано и заправлено");}
+  else toast("Техобслуживание завершено: здоровье и энергия восстановлены");
+  if(currentMission()?.type==="garage")completeMission();
+  return;
+ }
+ if(inside.type==="warehouse"){toast("Подойди к отмеченной посылке и нажми E");return}
+ if(inside.type==="hospital"){player.hp=100;toast("Здоровье восстановлено");return}
+ if(inside.type==="home"){energy=100;toast("Ты отдохнул. Энергия восстановлена");return}
+ if(inside.type==="club"){toast("Музыка играет. Здесь пока нет заданий");return}
+ toast("Здесь пока нет доступных действий");
+}
+
+// ИНТЕРЬЕР
+function drawInterior(){
+ ctx.fillStyle="#242a2d";ctx.fillRect(0,0,W,H);
+ ctx.fillStyle="#5b6262";ctx.fillRect(60,55,W-120,H-110);
+ ctx.fillStyle="#454b4d";ctx.fillRect(80,75,W-160,H-150);
+ for(let x=90;x<W-90;x+=55)for(let y=90;y<H-90;y+=55){
+  ctx.strokeStyle="#ffffff12";ctx.strokeRect(x,y,55,55);
+ }
+ ctx.fillStyle="#d8d2bd";ctx.fillRect(W/2-55,H-105,110,15);
+ ctx.fillStyle="#101820";ctx.font="bold 20px Arial";ctx.textAlign="center";
+ ctx.fillText(inside.name,W/2,115);
+ ctx.font="13px Arial";ctx.fillStyle="#d5dadd";
+ ctx.fillText("Подойди к двери внизу и нажми E, чтобы выйти",W/2,H-55);
+ ctx.textAlign="left";
+
+ if(inside.type==="shop"||inside.type==="clothes"||inside.type==="cafe"){
+  ctx.fillStyle="#876c50";ctx.fillRect(W*.25,H*.3,W*.5,45);
+  ctx.fillStyle="#d9d3c5";ctx.fillRect(W*.28,H*.33,W*.44,8);
+  ctx.fillStyle="#5b9b76";ctx.fillRect(W*.32,H*.48,55,55);
+  ctx.fillStyle="#c7a45b";ctx.fillRect(W*.62,H*.48,55,55);
+  ctx.fillStyle="white";ctx.font="13px Arial";ctx.fillText("КАССА / СТОЙКА",W*.39,H*.28);
+  ctx.fillText("ТОВАРЫ",W*.46,H*.63);
+ }
+ if(inside.type==="bank"){
+  ctx.fillStyle="#b79d61";ctx.fillRect(W*.25,H*.28,W*.5,65);
+  ctx.fillStyle="#263a4b";ctx.fillRect(W*.28,H*.32,W*.44,18);
+  ctx.fillStyle="#e5d8a9";ctx.font="bold 16px Arial";ctx.fillText("BANK SERVICE",W*.36,H*.39);
+  ctx.fillStyle="#b4b7bb";ctx.fillRect(W*.36,H*.55,90,55);
+  ctx.fillRect(W*.55,H*.55,90,55);
+  ctx.fillStyle="#fff";ctx.font="13px Arial";ctx.fillText("СОТРУДНИК БАНКА",W*.38,H*.52);
+ }
+ if(inside.type==="garage"){
+  ctx.fillStyle="#58646b";ctx.fillRect(W*.25,H*.4,W*.5,95);
+  ctx.fillStyle="#a2b2bb";ctx.fillRect(W*.34,H*.43,W*.32,45);
+  ctx.fillStyle="#d9d9d9";ctx.fillText("АВТОСЕРВИС",W*.42,H*.38);
+ }
+ if(inside.type==="warehouse"){
+  for(let i=0;i<5;i++){
+   ctx.fillStyle=i%2?"#9a754d":"#8b6743";
+   ctx.fillRect(120+i*95,H*.3,60,65);
+   ctx.fillStyle="#d6b17d";ctx.fillRect(125+i*95,H*.33,50,5);
+  }
+ }
+ if(inside.type==="hospital"){
+  ctx.fillStyle="#e5e5e5";ctx.fillRect(W*.3,H*.4,W*.4,80);
+  ctx.fillStyle="#d65b5b";ctx.fillRect(W*.48,H*.43,22,65);ctx.fillRect(W*.39,H*.56,40,20);
+ }
+ if(inside.type==="home"){
+  ctx.fillStyle="#9b8062";ctx.fillRect(W*.28,H*.38,W*.42,55);
+  ctx.fillStyle="#d6c2a3";ctx.fillRect(W*.35,H*.52,110,65);
+ }
+ if(inside.type==="club"){
+  ctx.fillStyle="#6b3e9a";ctx.fillRect(W*.2,H*.3,W*.6,80);
+  ctx.fillStyle="#b37aff";ctx.fillRect(W*.3,H*.4,W*.4,10);
+ }
+ if(["shop","cafe","warehouse"].includes(inside.id)){
+  const m=currentMission();
+  const packageExists=(m?.type==="warehouse" && inside.id==="warehouse") ||
+   (m?.type==="packages" && missionPackages.some(p=>p.building===inside.id&&!p.taken));
+  if(packageExists){
+   const p=interiorPoint();
+   ctx.fillStyle="#ffd45c";ctx.fillRect(p.x-12,p.y-12,24,24);
+   ctx.strokeStyle="#fff1a8";ctx.strokeRect(p.x-15,p.y-15,30,30);
+   ctx.fillStyle="#fff";ctx.font="bold 12px Arial";ctx.fillText("ПОСЫЛКА",p.x+20,p.y+5);
+  }
+ }
+ ctx.fillStyle="#5dffa1";ctx.fillRect(W/2-35,H-115,70,8);
+ ctx.fillStyle="#4ab9dc";ctx.beginPath();ctx.arc(interiorPlayer.x,interiorPlayer.y,11,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle="#f1c9a1";ctx.beginPath();ctx.arc(interiorPlayer.x,interiorPlayer.y-13,7,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle="#fff";ctx.font="12px Arial";ctx.textAlign="center";
+ ctx.fillText("WASD — движение · E — действие / выход",W/2,35);
+ ctx.textAlign="left";
+}
+
+// МАГАЗИНЫ И БАНК
+function openShop(b){
+ toggleInventory(false);
+ shopOpen=true;
+ document.getElementById("shopPanel").style.display="block";
+ document.getElementById("shopTitle").textContent=b.name;
+ document.getElementById("shopInfo").textContent="Деньги: $"+money.toLocaleString();
+ document.getElementById("robButton").style.display=b.id==="shop"?"block":"none";
+}
+function closeShop(){
+ shopOpen=false;
+ document.getElementById("shopPanel").style.display="none";
+}
+function buyItem(type){
+ if(!shopOpen)return;
+ const items={
+  health:{price:250,run:()=>player.hp=100,msg:"Аптечка куплена"},
+  energy:{price:150,run:()=>energy=100,msg:"Энергия восстановлена"},
+  armor:{price:500,run:()=>player.armor=100,msg:"Защита куплена"}
+ };
+ const item=items[type];
+ if(!item){toast("Такого товара нет");return}
+ if(money<item.price){toast("Недостаточно денег");return}
+ money-=item.price;item.run();toast(item.msg);
+ document.getElementById("shopInfo").textContent="Деньги: $"+money.toLocaleString();
+ updateHUD();
+}
+function bankAction(){
+ const amount=500;
+ const choice=prompt("CITY BANK\nНапиши deposit — внести $500\nНапиши withdraw — снять $500");
+ let transactionDone=false;
+ if(choice==="deposit"){
+  if(money>=amount){money-=amount;bankMoney+=amount;toast("Внесено $500");transactionDone=true}
+  else toast("Недостаточно наличных");
+ }else if(choice==="withdraw"){
+  if(bankMoney>=amount){bankMoney-=amount;money+=amount;toast("Снято $500");transactionDone=true}
+  else toast("Недостаточно денег на счёте");
+ }else{return}
+ if(transactionDone&&currentMission()?.type==="bank")completeMission();
+ updateHUD();
+}
+
+// ИГРОВОЕ ОГРАБЛЕНИЕ
+function robShop(){
+ if(!shopOpen || !inside || inside.id!=="shop"){toast("Ограбление доступно только в супермаркете");return}
+ if(robberyActive){toast("Сигнализация уже сработала");return}
+ closeShop();
+ robberyActive=true;robberyTimer=300;
+ crime(2);
+ toast("СИГНАЛИЗАЦИЯ! Подожди 5 секунд игрового времени");
+}
+
+// ОРУЖИЕ — АРКАДНЫЕ ИГРОВЫЕ ЭФФЕКТЫ
+function selectWeapon(n){
+ weapon=n;
+ for(let i=1;i<=5;i++)document.getElementById("s"+i).classList.toggle("active",i===n);
+ document.getElementById("weapon").textContent="Предмет: "+["Кулаки","Пистолет","ПП","Винтовка","Импульс"][n-1];
+}
+function useWeapon(){
+ if(inside||shopOpen||consoleOpen)return;
+ if(weapon===1){
+  toast("Удар кулаком");
+  return;
+ }
+ if(energy<10){toast("Мало энергии — нажми R");return}
+ energy-=weapon===5?25:10;
+ const amount=weapon===3?4:weapon===5?2:1;
+ for(let i=0;i<amount;i++){
+  const a=player.angle+(Math.random()-.5)*.2;
+  bullets.push({x:player.x,y:player.y,vx:Math.cos(a)*9,vy:Math.sin(a)*9,life:50});
+ }
+}
+function nearestCar(){
+ let best=null,d=55;
+ for(const c of cars){const z=dist(c,player);if(z<d){d=z;best=c}}
+ return best;
+}
+
+// РОЗЫСК
+function crime(n){
+ wanted=clamp(wanted+n,0,6);lastCrime=clock;
+ updatePolice();toast("РОЗЫСК ПОВЫШЕН");
+}
+function updatePolice(){
+ while(police.length<wanted){
+  police.push({x:clamp(player.x+rand(-350,350),20,WORLD-20),
+   y:clamp(player.y+rand(-350,350),20,WORLD-20),speed:1.1+wanted*.22});
+ }
+ while(police.length>wanted)police.pop();
+ if(wanted>=4&&helicopters.length===0)helicopters.push({x:player.x+200,y:player.y-200});
+ if(wanted<4)helicopters.length=0;
+}
+function moveToward(o,t,s){
+ const a=Math.atan2(t.y-o.y,t.x-o.x);
+ o.angle=a;o.x+=Math.cos(a)*s;o.y+=Math.sin(a)*s;
+}
+
+// КОНСОЛЬ РАЗРАБОТЧИКА
+const consoleEl=document.getElementById("console");
+const consoleLog=document.getElementById("consoleLog");
+const consoleInput=document.getElementById("consoleInput");
+
+function log(s){
+ consoleLog.textContent+="\n> "+s;
+ consoleLog.scrollTop=consoleLog.scrollHeight;
+}
+function toggleConsole(force){
+ consoleOpen=typeof force==="boolean"?force:!consoleOpen;
+ if(consoleOpen){closeShop();toggleInventory(false)}
+ consoleEl.style.display=consoleOpen?"block":"none";
+ if(consoleOpen){consoleInput.focus();for(const k in keys)keys[k]=false}
+}
+function runCommand(raw){
+ const args=raw.trim().toLowerCase().split(/\s+/);
+ const cmd=args[0],val=args[1];
+ if(!cmd)return;
+ switch(cmd){
+ case "help":
+  log("ДОСТУПНЫЕ КОМАНДЫ:");
+  log("day — включить день");
+  log("night — включить ночь");
+  log("cycle — обычная смена времени");
+  log("weather [clear/rain/fog] — погода");
+  log("time — показать режим времени");
+  log("money [число] — добавить деньги");
+  log("bank [число] — добавить деньги на счёт");
+  log("wanted [0-6] — установить розыск");
+  log("clearwanted — убрать розыск");
+  log("heal — восстановить здоровье");
+  log("energy — восстановить энергию");
+  log("armor — восстановить защиту");
+  log("godmode — бессмертие в игре вкл/выкл");
+  log("speed [число] — скорость игрока");
+  log("tp [shop/bank/garage/home/cafe/hospital/club/warehouse]");
+  log("car — создать машину рядом");
+  log("mission — показать задание");
+  log("nextmission — перейти к следующему заданию");
+  log("complete — завершить текущее задание");
+  log("resetmission — начать задания сначала");
+  log("interior — войти в ближайшее здание");
+  log("exit — выйти из здания");
+  log("rob — игровое событие ограбления магазина");
+  log("save — сохранить игру");
+  log("load — загрузить игру");
+  log("inventory — открыть каталог и инвентарь (клавиша I)");
+  log("clear — очистить консоль");
+  log("close — закрыть консоль");
+  break;
+ case "day":
+  alwaysDay=true;alwaysNight=false;night=false;log("Постоянный день включён");break;
+ case "night":
+  alwaysNight=true;alwaysDay=false;night=true;log("Постоянная ночь включена");break;
+ case "cycle":
+  alwaysDay=false;alwaysNight=false;log("Обычная смена времени включена");break;
+ case "weather":
+  if(["clear","rain","fog"].includes(val)){weather=val;weatherClock=0;log("Погода: "+(val==="clear"?"ясно":val==="rain"?"дождь":"туман"));}
+  else log("Использование: weather clear / rain / fog");
+  break;
+ case "time":
+  log(alwaysDay?"Режим: постоянный день":alwaysNight?"Режим: постоянная ночь":"Режим: цикл дня и ночи");break;
+ case "money":{
+  const n=Number(val||1000);
+  if(Number.isFinite(n)&&n>0){money+=Math.floor(n);log("Добавлено $"+Math.floor(n))}
+  else log("Использование: money 1000");
+  break;
+ }
+ case "bank":{
+  const n=Number(val||1000);
+  if(Number.isFinite(n)&&n>0){bankMoney+=Math.floor(n);log("На счёт добавлено $"+Math.floor(n))}
+  else log("Использование: bank 1000");
+  break;
+ }
+ case "wanted":{
+  const n=Number(val);
+  if(Number.isInteger(n)&&n>=0&&n<=6){wanted=n;updatePolice();log("Уровень розыска: "+n)}
+  else log("Использование: wanted 0-6");
+  break;
+ }
+ case "clearwanted":wanted=0;police.length=0;helicopters.length=0;log("Розыск снят");break;
+ case "heal":player.hp=100;log("Здоровье восстановлено");break;
+ case "energy":energy=100;log("Энергия восстановлена");break;
+ case "armor":player.armor=100;log("Защита восстановлена");break;
+ case "godmode":godMode=!godMode;log("God mode: "+(godMode?"ON":"OFF"));break;
+ case "speed":{
+  const n=Number(val);
+  if(Number.isFinite(n)&&n>=.5&&n<=10){playerSpeed=n;log("Скорость: "+n)}
+  else log("Использование: speed 2.5 (от 0.5 до 10)");
+  break;
+ }
+ case "tp":{
+  const b=buildings.find(b=>b.id===val);
+  if(b){inside=null;player.x=b.x+b.w/2;player.y=b.y+b.h+25;log("Телепорт: "+b.name)}
+  else log("Места: shop, bank, garage, home, clothes, cafe, hospital, club, warehouse");
+  break;
+ }
+ case "car":
+  cars.push(makeCar(player.x+45,player.y,0,"#4c9bb5"));log("Машина создана рядом");break;
+ case "mission":
+  log(currentMission()?currentMission().name+" — "+currentMission().desc:"Все задания пройдены");break;
+ case "nextmission":
+  if(missionIndex<missions.length-1){missionIndex++;missionProgress=0;log("Открыто следующее задание");updateMissionHUD()}
+  else log("Последнее задание уже открыто");
+  break;
+ case "complete":
+  if(currentMission()){completeMission();log("Задание завершено командой")}
+  else log("Нет активных заданий");
+  break;
+ case "resetmission":
+  missionIndex=0;missionProgress=0;makePackages();updateMissionHUD();log("Задания сброшены");break;
+ case "interior":{
+  if(inside){log("Ты уже внутри здания");break}
+  const b=findNearbyBuilding();
+  if(b){insideExit={x:b.x+b.w/2,y:b.y+b.h+25};enterBuilding(b);log("Вход: "+b.name)}
+  else log("Подойди к двери здания");
+  break;
+ }
+ case "exit":
+  if(inside){inside=null;player.x=insideExit.x;player.y=insideExit.y;log("Выход выполнен")}
+  else log("Ты уже на улице");
+  break;
+ case "rob":
+  if(inside?.type==="shop"){openShop(inside);robShop();log("Игровое событие ограбления запущено")}
+  else log("Для этого нужно находиться в магазине");
+  break;
+ case "inventory":toggleConsole(false);toggleInventory(true);break;
+ case "save":saveGame();log("Сохранение выполнено");break;
+ case "load":loadGame();log("Загрузка выполнена");break;
+ case "clear":consoleLog.textContent="Developer Console — очищено.";break;
+ case "close":toggleConsole(false);break;
+ default:log("Неизвестная команда. Напиши help.");
+ }
+}
+consoleInput.addEventListener("keydown",e=>{
+ if(e.key==="Enter"){
+  const v=consoleInput.value;
+  log(v);runCommand(v);consoleInput.value="";
+ }
+ if(e.key==="Escape")toggleConsole(false);
+});
+
+// СОХРАНЕНИЕ
+function saveGame(){
+ try{
+  const data={
+   version:80,
+   x:player.x,y:player.y,vx:player.vx,vy:player.vy,hp:player.hp,armor:player.armor,
+   money,bankMoney,energy,wanted,missionIndex,missionProgress,
+   packageState:missionPackages.map(p=>p.taken),
+   pickupState:pickups.map(p=>p.taken),
+   pickups:pickups.map(p=>({x:p.x,y:p.y,taken:p.taken})),
+   alwaysDay,alwaysNight,night,weather,nitro,playerSpeed,godMode,
+   inventory,outfitColor,
+   inCar:!!(inCar&&car),carIndex:inCar&&car?cars.indexOf(car):-1,
+   cars:cars.map(c=>({x:c.x,y:c.y,angle:c.angle,speed:c.speed,fuel:c.fuel,condition:c.condition}))
+  };
+  localStorage.setItem("metropolis_save",JSON.stringify(data));
+  toast("ИГРА СОХРАНЕНА");
+ }catch(e){toast("Не удалось сохранить игру в этом режиме браузера")}
+}
+function loadGame(){
+ try{
+  const raw=localStorage.getItem("metropolis_save");
+  if(!raw){toast("Сохранение не найдено");return}
+  const d=JSON.parse(raw);
+  if(!d||typeof d!=="object"||!Number.isFinite(d.x)||!Number.isFinite(d.y)){
+   toast("Файл сохранения повреждён");return;
+  }
+  const safeNum=(v,fallback,min,max)=>Number.isFinite(v)?clamp(v,min,max):fallback;
+  player.x=safeNum(d.x,250,12,WORLD-12);
+  player.y=safeNum(d.y,300,12,WORLD-12);
+  player.vx=safeNum(d.vx,0,-12,12);player.vy=safeNum(d.vy,0,-12,12);
+  player.hp=safeNum(d.hp,100,0,100);player.armor=safeNum(d.armor,0,0,100);
+  money=safeNum(d.money,2500,0,999999999);bankMoney=safeNum(d.bankMoney,5000,0,999999999);
+  energy=safeNum(d.energy,100,0,100);wanted=Math.round(safeNum(d.wanted,0,0,6));
+  missionIndex=Math.round(safeNum(d.missionIndex,0,0,missions.length));
+  missionProgress=Math.round(safeNum(d.missionProgress,0,0,3));
+  alwaysDay=!!d.alwaysDay;alwaysNight=!!d.alwaysNight;night=!!d.night;
+  if(["clear","rain","fog"].includes(d.weather))weather=d.weather;
+  nitro=safeNum(d.nitro,100,0,100);playerSpeed=safeNum(d.playerSpeed,2.2,.5,10);godMode=!!d.godMode;
+  for(const id of Object.keys(inventory))delete inventory[id];
+  if(d.inventory&&typeof d.inventory==="object")for(const [id,count] of Object.entries(d.inventory)){
+   if(itemMap[id]&&Number.isFinite(count)&&count>0)inventory[id]=Math.min(99,Math.floor(count));
+  }
+  if(typeof d.outfitColor==="string"&&/^#[0-9a-fA-F]{6}$/.test(d.outfitColor))outfitColor=d.outfitColor;
+  toggleInventory(false);
+  missionPackages.forEach((p,i)=>p.taken=Array.isArray(d.packageState)?!!d.packageState[i]:false);
+  if(Array.isArray(d.pickups))pickups.forEach((p,i)=>{
+   const saved=d.pickups[i];if(!saved)return;
+   p.x=safeNum(saved.x,p.x,10,WORLD-10);p.y=safeNum(saved.y,p.y,10,WORLD-10);p.taken=!!saved.taken;
+  });
+  else pickups.forEach((p,i)=>p.taken=Array.isArray(d.pickupState)?!!d.pickupState[i]:false);
+  if(Array.isArray(d.cars))cars.forEach((c,i)=>{
+   const saved=d.cars[i];if(!saved)return;
+   c.x=safeNum(saved.x,c.x,12,WORLD-12);c.y=safeNum(saved.y,c.y,12,WORLD-12);
+   c.angle=safeNum(saved.angle,c.angle,-1000,1000);c.speed=safeNum(saved.speed,0,-8,8);
+   c.fuel=safeNum(saved.fuel,100,0,100);c.condition=safeNum(saved.condition,100,0,100);
+  });
+  const index=Number.isInteger(d.carIndex)?d.carIndex:-1;
+  inCar=!!d.inCar&&index>=0&&index<cars.length;
+  car=inCar?cars[index]:null;
+  if(inCar){player.x=car.x;player.y=car.y;}
+  inside=null;shopOpen=false;document.getElementById("shopPanel").style.display="none";
+  toggleInventory(false);
+  robberyActive=false;robberyTimer=0;
+  updatePolice();updateMissionHUD();updateHUD();
+  toast("ИГРА ЗАГРУЖЕНА");
+ }catch(e){toast("Ошибка загрузки сохранения")}
+}
+
+// РИСОВАНИЕ ГОРОДА
+function drawRoads(){
+ // Основа города и плиточные тротуары.
+ ctx.fillStyle="#53634f";ctx.fillRect(0,0,WORLD,WORLD);
+ for(let x=0;x<WORLD;x+=46)for(let y=0;y<WORLD;y+=46){
+  const shade=((x/46+y/46)%2===0)?"#ffffff06":"#00000005";
+  ctx.fillStyle=shade;ctx.fillRect(x,y,44,44);
+ }
+ for(let i=0;i<6;i++){
+  const p=roadAt(i);
+  // тротуар
+  ctx.fillStyle="#a5a59a";
+  ctx.fillRect(p-83,0,166,WORLD);ctx.fillRect(0,p-83,WORLD,166);
+  // бордюры
+  ctx.fillStyle="#d0c9b4";
+  ctx.fillRect(p-84,0,4,WORLD);ctx.fillRect(p+80,0,4,WORLD);
+  ctx.fillRect(0,p-84,WORLD,4);ctx.fillRect(0,p+80,WORLD,4);
+  // асфальт и обочины
+  ctx.fillStyle="#30383d";
+  ctx.fillRect(p-58,0,116,WORLD);ctx.fillRect(0,p-58,WORLD,116);
+  ctx.fillStyle="#42494d";
+  ctx.fillRect(p-53,0,106,WORLD);ctx.fillRect(0,p-53,WORLD,106);
+  // центральные линии
+  ctx.strokeStyle="#d8c98d";ctx.lineWidth=2;ctx.setLineDash([24,22]);
+  ctx.beginPath();ctx.moveTo(p,0);ctx.lineTo(p,WORLD);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(0,p);ctx.lineTo(WORLD,p);ctx.stroke();ctx.setLineDash([]);
+  // пешеходные переходы у перекрёстков
+  for(let j=0;j<6;j++){
+   const q=roadAt(j);
+   ctx.fillStyle="#e7e5d8a8";
+   for(let k=0;k<7;k++){
+    ctx.fillRect(p-51+k*15,q-77,8,22);ctx.fillRect(p-51+k*15,q+55,8,22);
+    ctx.fillRect(q-77,p-51+k*15,22,8);ctx.fillRect(q+55,p-51+k*15,22,8);
+   }
+  }
+ }
+}
+function drawBuilding(b){
+ ctx.save();
+ // Тень и основание
+ ctx.fillStyle="#10171955";ctx.fillRect(b.x+12,b.y+15,b.w,b.h);
+ ctx.fillStyle="#30383a";ctx.fillRect(b.x-7,b.y-7,b.w+14,b.h+14);
+ ctx.fillStyle="#485052";ctx.fillRect(b.x-3,b.y-3,b.w+6,b.h+6);
+ ctx.fillStyle=b.color;ctx.fillRect(b.x,b.y,b.w,b.h);
+ // Светлая крыша / фасадная полоса
+ ctx.fillStyle="#ffffff20";ctx.fillRect(b.x+7,b.y+7,b.w-14,9);
+ ctx.fillStyle="#00000018";ctx.fillRect(b.x+7,b.y+b.h-12,b.w-14,6);
+ // Фасадные окна с рамами и бликами
+ const cols=Math.max(2,Math.floor((b.w-28)/27)),rows=Math.max(2,Math.floor((b.h-42)/27));
+ const gap=(b.w-24)/cols;
+ for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+  const wx=b.x+12+c*gap,wy=b.y+25+r*25;
+  ctx.fillStyle="#202c32";ctx.fillRect(wx,wy,Math.min(17,gap-5),17);
+  ctx.fillStyle=(night&&((r+c+(b.variant||0))%3===0))?"#f5d995":"#8bb8c2";
+  ctx.globalAlpha=.82;ctx.fillRect(wx+2,wy+2,Math.min(13,gap-9),12);ctx.globalAlpha=1;
+  ctx.fillStyle="#ffffff55";ctx.fillRect(wx+3,wy+3,3,9);
+ }
+ // Вход и козырёк
+ ctx.fillStyle="#26343a";ctx.fillRect(b.x+b.w/2-13,b.y+b.h-27,26,27);
+ ctx.fillStyle="#cbbd96";ctx.fillRect(b.x+b.w/2-17,b.y+b.h-29,34,4);
+ ctx.fillStyle="#9bc8d0";ctx.fillRect(b.x+b.w/2-9,b.y+b.h-23,7,13);
+ ctx.fillStyle="#ffffff30";ctx.fillRect(b.x+5,b.y+b.h-4,b.w-10,3);
+ // Вывеска
+ ctx.fillStyle="#172328";ctx.fillRect(b.x+b.w/2- Math.min(65,b.w*.42),b.y-18,Math.min(130,b.w*.84),16);
+ ctx.fillStyle="#f4e8c9";ctx.font="bold 9px Arial";ctx.textAlign="center";
+ ctx.fillText(b.name,b.x+b.w/2,b.y-7,Math.min(126,b.w-8));
+ // Архитектурные детали: крыша, вентиляция, балконы и контрастные панели.
+ ctx.fillStyle="#1c282d";ctx.fillRect(b.x+8,b.y+8,b.w-16,5);
+ if(b.variant===0){ctx.fillStyle="#59656a";ctx.fillRect(b.x+12,b.y+12,18,7);ctx.fillRect(b.x+b.w-32,b.y+12,18,7)}
+ if(b.variant===1){ctx.fillStyle="#b8a77d";ctx.fillRect(b.x+10,b.y+b.h-38,8,10);ctx.fillRect(b.x+b.w-18,b.y+b.h-38,8,10)}
+ if(b.variant===2){ctx.fillStyle="#6c7778";ctx.fillRect(b.x+b.w*.35,b.y+8,b.w*.3,8)}
+ if(b.variant===3){ctx.fillStyle="#3d5057";ctx.fillRect(b.x+14,b.y+13,24,10);ctx.fillRect(b.x+b.w-40,b.y+13,24,10)}
+ ctx.fillStyle="#ffffff18";ctx.fillRect(b.x+5,b.y+18,4,b.h-28);ctx.fillRect(b.x+b.w-9,b.y+18,4,b.h-28);
+ ctx.fillStyle="#17252b";ctx.fillRect(b.x+b.w/2-22,b.y+b.h-34,44,5);
+ ctx.fillStyle="#ffffff20";ctx.fillRect(b.x+8,b.y+b.h-5,b.w-16,2);
+ ctx.restore();
+}
+function drawCar(c){
+ ctx.save();ctx.translate(c.x,c.y);ctx.rotate(c.angle);
+ ctx.fillStyle="#0009";ctx.fillRect(-18,-8,40,24);
+ ctx.fillStyle="#171b1e";ctx.fillRect(-14,-14,9,4);ctx.fillRect(8,-14,9,4);ctx.fillRect(-14,10,9,4);ctx.fillRect(8,10,9,4);
+ ctx.fillStyle=c.color;ctx.beginPath();ctx.roundRect(-20,-12,40,24,6);ctx.fill();
+ ctx.fillStyle="#ffffff35";ctx.fillRect(-15,-10,27,3);
+ ctx.fillStyle="#243a45";ctx.fillRect(-7,-9,15,18);
+ ctx.fillStyle="#a9cbd6";ctx.fillRect(-5,-7,11,14);
+ ctx.fillStyle="#ffffff45";ctx.fillRect(-4,-6,3,11);
+ ctx.fillStyle="#f6e7aa";ctx.fillRect(17,-8,3,5);ctx.fillRect(17,4,3,5);
+ ctx.fillStyle="#d94d48";ctx.fillRect(-20,-8,3,5);ctx.fillRect(-20,4,3,5);
+ if(night){ctx.fillStyle="#fff1b455";ctx.beginPath();ctx.ellipse(28,0,18,12,0,-.7,.7);ctx.fill();}
+ ctx.restore();
+}
+function drawPeople(){
+ for(const p of people){
+  if(!p.active)continue;
+  ctx.fillStyle="#0005";ctx.beginPath();ctx.ellipse(p.x,p.y+5,7,3,0,0,7);ctx.fill();
+  ctx.fillStyle=p.color;ctx.fillRect(p.x-5,p.y-4,10,13);
+  ctx.fillStyle="#e7c29f";ctx.beginPath();ctx.arc(p.x,p.y-8,5,0,7);ctx.fill();
+  const hearts=Math.ceil(p.hp/25);
+  for(let i=0;i<4;i++){
+   ctx.fillStyle=i<hearts?"#ff5368":"#51343a";
+   ctx.font="9px Arial";ctx.fillText("♥",p.x-13+i*7,p.y-20);
+  }
+ }
+}
+function drawPlayer(){
+ ctx.save();ctx.translate(player.x,player.y);ctx.rotate(player.angle);
+ ctx.fillStyle="#0008";ctx.beginPath();ctx.ellipse(2,5,13,7,0,0,7);ctx.fill();
+ ctx.fillStyle="#142b36";ctx.fillRect(-8,-8,16,19);
+ ctx.fillStyle=outfitColor;ctx.fillRect(-6,-7,12,16);
+ ctx.fillStyle="#ffffff35";ctx.fillRect(-5,-6,3,12);
+ ctx.fillStyle="#e8c19d";ctx.beginPath();ctx.arc(0,-10,6,0,7);ctx.fill();
+ ctx.fillStyle="#30383d";ctx.fillRect(-5,-15,10,3);
+ ctx.restore();
+}
+function drawStreet(){
+ ctx.save();ctx.translate(-camera.x,-camera.y);
+ drawRoads();
+ for(const t of trees){
+  ctx.fillStyle="#17251d55";ctx.beginPath();ctx.ellipse(t.x+4,t.y+8,t.r*1.1,t.r*.65,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle="#70533a";ctx.fillRect(t.x-3,t.y-1,6,13);
+  ctx.fillStyle="#254c35";ctx.beginPath();ctx.arc(t.x,t.y,t.r+2,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle="#3e7549";ctx.beginPath();ctx.arc(t.x-3,t.y-3,t.r*.72,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle="#ffffff18";ctx.beginPath();ctx.arc(t.x-5,t.y-6,t.r*.3,0,Math.PI*2);ctx.fill();
+ }
+ for(const l of streetLights){
+  ctx.fillStyle="#343a3d";ctx.fillRect(l.x-2,l.y-2,4,17);
+  ctx.strokeStyle="#444b4e";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(l.x,l.y-1);ctx.lineTo(l.x+9,l.y-8);ctx.stroke();
+  ctx.fillStyle=night?"#ffe4a0":"#d7d6b8";ctx.beginPath();ctx.arc(l.x+9,l.y-8,4,0,Math.PI*2);ctx.fill();
+  if(night){ctx.fillStyle="#ffe5a022";ctx.beginPath();ctx.arc(l.x+9,l.y-8,22,0,Math.PI*2);ctx.fill();}
+ }
+ for(const b of buildings)drawBuilding(b);
+ for(const c of traffic){
+  if(c.vertical)c.y+=0;
+  drawCar({...c,angle:c.vertical?Math.PI/2:0});
+ }
+ for(const c of cars)drawCar(c);
+ drawPeople();
+ for(const p of police){
+  drawCar({...p,color:"#e0e3e7"});
+  ctx.fillStyle="#ef5555";ctx.fillRect(p.x-5,p.y-13,8,4);
+  ctx.fillStyle="#4a8cff";ctx.fillRect(p.x+4,p.y-13,8,4);
+ }
+ for(const h of helicopters){
+  ctx.fillStyle="#313e47";ctx.beginPath();ctx.arc(h.x,h.y,15,0,7);ctx.fill();
+  ctx.strokeStyle="#ddd";ctx.beginPath();ctx.moveTo(h.x-35,h.y-18);ctx.lineTo(h.x+35,h.y-18);ctx.stroke();
+ }
+ for(const p of pickups)if(!p.taken){
+  ctx.fillStyle="#ffd35a";ctx.fillRect(p.x-6,p.y-6,12,12);
+ }
+ // Дверные маркеры
+ for(const b of buildings){
+  ctx.fillStyle="#5dffa1";ctx.beginPath();ctx.arc(b.x+b.w/2,b.y+b.h+12,5,0,7);ctx.fill();
+ }
+ for(const p of bullets){
+  ctx.fillStyle="#8deaff";ctx.beginPath();ctx.arc(p.x,p.y,4,0,7);ctx.fill();
+ }
+ if(!inCar)drawPlayer();
+ if(night){
+  ctx.fillStyle="#101d3988";ctx.fillRect(camera.x,camera.y,W,H);
+ }
+ ctx.restore();
+}
+function drawMap(){
+ mc.clearRect(0,0,150,150);mc.fillStyle="#34483c";mc.fillRect(0,0,150,150);
+ mc.fillStyle="#818681";
+ for(let i=0;i<6;i++){
+  const p=roadAt(i)/WORLD*150;
+  mc.fillRect(p-2,0,4,150);mc.fillRect(0,p-2,150,4);
+ }
+ for(const b of buildings){
+  mc.fillStyle=b.type==="bank"?"#76b4ff":b.type==="shop"?"#76e69c":b.type==="city"?"#a9b3b4":"#c4c4c4";
+  mc.fillRect(b.x/WORLD*150,b.y/WORLD*150,Math.max(2,b.w/WORLD*150),Math.max(2,b.h/WORLD*150));
+ }
+ for(const p of police){mc.fillStyle="#ff6262";mc.beginPath();mc.arc(p.x/WORLD*150,p.y/WORLD*150,2.5,0,Math.PI*2);mc.fill();}
+ mc.fillStyle="#55dfff";mc.beginPath();
+ mc.arc(player.x/WORLD*150,player.y/WORLD*150,4,0,7);mc.fill();
+}
+
+// ОБНОВЛЕНИЕ
+function update(){
+ clock++;
+ if(robberyActive){
+  robberyTimer--;
+  if(robberyTimer<=0){
+   robberyTimer=0;robberyActive=false;money+=1200;
+   toast("Игровая касса открыта: +$1200");
+  }
+ }
+ weatherClock++;
+ if(weatherClock>2100){weatherClock=0;weather=weather==="clear"?"fog":weather==="fog"?"rain":"clear";toast(weather==="rain"?"Начался дождь":weather==="fog"?"Город накрыл туман":"Небо прояснилось");}
+ if(!consoleOpen&&!shopOpen&&!inventoryOpen){
+  let dx=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0);
+  let dy=(keys.KeyS||keys.ArrowDown?1:0)-(keys.KeyW||keys.ArrowUp?1:0);
+  const len=Math.hypot(dx,dy)||1;dx/=len;dy/=len;
+  if(inside){
+   interiorPlayer.x=clamp(interiorPlayer.x+dx*interiorPlayer.speed,105,Math.max(105,W-105));
+   interiorPlayer.y=clamp(interiorPlayer.y+dy*interiorPlayer.speed,145,Math.max(145,H-105));
+  }else if(!inCar){
+   const speed=(keys.ShiftLeft||keys.ShiftRight)?playerSpeed*1.4:playerSpeed;
+   player.vx=(player.vx+dx*speed)*.78;
+   player.vy=(player.vy+dy*speed)*.78;
+   let nx=player.x+player.vx,ny=player.y+player.vy;
+   if(!blocked(nx,player.y))player.x=nx;else player.vx=0;
+   if(!blocked(player.x,ny))player.y=ny;else player.vy=0;
+   if(Math.abs(player.vx)+Math.abs(player.vy)>.1)player.angle=Math.atan2(player.vy,player.vx);
+  }
+ }
+ if(inCar&&car&&!inside){
+  const accelerating=keys.KeyW||keys.ArrowUp;
+  nitroActive=!!(keys.Space&&nitro>0&&accelerating&&car.fuel>0);
+  const boost=nitroActive?0.12:0;
+  const accel=(accelerating?0.13+boost:0)-(keys.KeyS||keys.ArrowDown?0.1:0);
+  const maxSpeed=car.condition<25?2.3:5.4;
+  car.speed=clamp(car.speed+accel,-3,maxSpeed+(nitroActive?2.1:0));
+  if(keys.KeyA||keys.ArrowLeft)car.angle-=.045*(weather==="rain"?.78:1);
+  if(keys.KeyD||keys.ArrowRight)car.angle+=.045*(weather==="rain"?.78:1);
+  car.speed*=weather==="rain"?.972:.985;
+  if(nitroActive)nitro=Math.max(0,nitro-.55);else nitro=Math.min(100,nitro+.12);
+  if(Math.abs(car.speed)>.15)car.fuel=Math.max(0,car.fuel-.0025*Math.abs(car.speed));
+  if(car.fuel<=0){car.speed*=.94;if(Math.abs(car.speed)<.12)car.speed=0;}
+  const nx=car.x+Math.cos(car.angle)*car.speed;
+  const ny=car.y+Math.sin(car.angle)*car.speed;
+  if(!blocked(nx,ny,16)){car.x=nx;car.y=ny}
+  else{car.speed*=-.22;car.condition=Math.max(0,car.condition-.18);}
+  player.x=car.x;player.y=car.y;
+ }else nitroActive=false;
+ for(const c of traffic){
+  if(c.vertical){c.y+=c.speed;if(c.y>WORLD)c.y=0}
+  else{c.x+=c.speed;if(c.x>WORLD)c.x=0}
+ }
+ for(const p of people){
+  if(!p.active)continue;
+  p.x+=Math.cos(p.dir)*p.speed;
+  p.y+=Math.sin(p.dir)*p.speed;
+  if(p.x<10||p.y<10||p.x>WORLD-10||p.y>WORLD-10)p.dir+=Math.PI;
+  if(Math.random()<.005)p.dir=rand(0,Math.PI*2);
+ }
+ for(const p of police)moveToward(p,player,p.speed);
+ for(const h of helicopters){
+  h.x+=Math.sin(clock*.02)*1.5;
+  h.y+=Math.cos(clock*.02)*1.5;
+ }
+ for(const b of bullets){
+  b.x+=b.vx;b.y+=b.vy;b.life--;
+ }
+ for(let i=bullets.length-1;i>=0;i--)if(bullets[i].life<=0)bullets.splice(i,1);
+ for(const p of pickups){
+  if(!p.taken&&dist(p,player)<20){p.taken=true;money+=100;toast("+$100")}
+ }
+ if(!alwaysDay&&!alwaysNight&&clock%900===0)night=!night;
+ if(alwaysDay)night=false;
+ if(alwaysNight)night=true;
+ if(wanted>0&&clock-lastCrime>1500&&clock%300===0){
+  wanted--;updatePolice();
+ }
+ if(energy<100&&clock%5===0)energy=Math.min(100,energy+.3);
+ camera.x=clamp(player.x-W/2,0,WORLD-W);
+ camera.y=clamp(player.y-H/2,0,WORLD-H);
+ if(toastTimer>0&&--toastTimer===0)document.getElementById("toast").style.opacity=0;
+ updateHUD();
+}
+function getDistrict(){
+ const x=player.x,y=player.y;
+ if(x>1900&&y<1000)return "Деловой центр";
+ if(x<1100&&y<1000)return "Старый город";
+ if(x>1800&&y>1700)return "Промзона";
+ if(x<1100&&y>1700)return "Парковый район";
+ if(y>1000&&y<1800)return "Центральный квартал";
+ if(x>2200)return "Восточный район";
+ return "Западный район";
+}
+function updateHUD(){
+ document.getElementById("money").textContent="$ "+money.toLocaleString();
+ document.getElementById("bankMoney").textContent="$ "+bankMoney.toLocaleString();
+ document.getElementById("stars").textContent="★".repeat(wanted)+"☆".repeat(6-wanted);
+ document.getElementById("wantedText").textContent=["Город спокоен","Полиция наблюдает","Патруль ищет тебя","Усиленный розыск","Воздушное наблюдение","Спецподразделение","Максимальный розыск"][wanted];
+ document.getElementById("hp").textContent=player.hp;
+ document.getElementById("energy").textContent=Math.floor(energy);
+ document.getElementById("location").textContent=inside?inside.name:inCar?"В автомобиле":"Улица";
+ document.getElementById("weatherLabel").textContent=weather==="rain"?"Дождь":weather==="fog"?"Туман":"Ясно";
+ document.getElementById("districtLabel").textContent=getDistrict();
+ const carHud=document.getElementById("carHud");
+ carHud.style.display=inCar&&car?"block":"none";
+ if(inCar&&car){
+  document.getElementById("carSpeed").textContent=Math.round(Math.abs(car.speed)*24);
+  document.getElementById("fuelBar").style.width=car.fuel+"%";
+  document.getElementById("conditionBar").style.width=car.condition+"%";
+  document.getElementById("nitroBar").style.width=nitro+"%";
+  document.getElementById("fuelBar").style.background=car.fuel<20?"#ed765e":"#65d69a";
+  document.getElementById("conditionBar").style.background=car.condition<25?"#ed765e":"#70b8ee";
+ }
+ updateMissionHUD();
+}
+function drawWeather(){
+ if(inside)return;
+ if(weather==="fog"){
+  const haze=ctx.createLinearGradient(0,0,0,H);
+  haze.addColorStop(0,"#c9d4d322");haze.addColorStop(.55,"#c9d4d31c");haze.addColorStop(1,"#d8dfd422");
+  ctx.fillStyle=haze;ctx.fillRect(0,0,W,H);
+ }
+ if(weather==="rain"){
+  ctx.fillStyle="#16263322";ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle="#c5e5f477";ctx.lineWidth=1;
+  for(const d of rainDrops){
+   d.x-=1.7;d.y+=d.speed;
+   if(d.y>H+20||d.x<-20){d.x=Math.random()*(W+80);d.y=-20;}
+   ctx.beginPath();ctx.moveTo(d.x,d.y);ctx.lineTo(d.x-4,d.y+d.len);ctx.stroke();
+  }
+  ctx.fillStyle="#8bb7c522";
+  for(let i=0;i<9;i++){
+   const x=(i*173+clock*.35)%(W+80)-40,y=(i*97+H*.58)%(H*.38)+H*.55;
+   ctx.beginPath();ctx.ellipse(x,y,22+(i%3)*9,4,0,0,Math.PI*2);ctx.fill();
+  }
+ }
+ if(night){
+  const vignette=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.2,W/2,H/2,Math.max(W,H)*.75);
+  vignette.addColorStop(0,"#07101a00");vignette.addColorStop(1,"#07101a55");
+  ctx.fillStyle=vignette;ctx.fillRect(0,0,W,H);
+ }
+}
+function render(){
+ ctx.clearRect(0,0,W,H);
+ if(inside)drawInterior();
+ else drawStreet();
+ drawWeather();
+ drawMap();
+}
+function loop(){update();render();requestAnimationFrame(loop)}
+
+// КЛАВИАТУРА
+addEventListener("keydown",e=>{
+ if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code))e.preventDefault();
+ if(e.code==="F5"){e.preventDefault();saveGame();return}
+ if(e.code==="F6"){e.preventDefault();loadGame();return}
+ if(consoleOpen){
+  if(e.code==="Escape")toggleConsole(false);
+  return;
+ }
+ if(shopOpen){
+  if(e.code==="Escape")closeShop();
+  return;
+ }
+ if(inventoryOpen){
+  if(e.code==="Escape"||e.code==="KeyI")toggleInventory(false);
+  return;
+ }
+ keys[e.code]=true;
+ if(e.repeat)return;
+ if(e.code==="Backquote"||e.code==="IntlBackslash"){toggleConsole(true);return}
+ if(e.code.startsWith("Digit")){
+  const n=Number(e.code.slice(5));if(n>=1&&n<=5)selectWeapon(n);
+ }
+ if(e.code==="KeyI"){toggleInventory(true);return}
+ if(e.code==="KeyE"){
+  if(inside)interactInside();
+  else interactBuilding();
+ }
+ if(e.code==="KeyF"){
+  if(inside)return;
+  if(!inCar){
+   const c=nearestCar();
+   if(c){car=c;inCar=true;toast("Вы сели в автомобиль")}
+   else toast("Нет машины рядом");
+  }else{inCar=false;car=null;toast("Вы вышли из автомобиля")}
+ }
+ if(e.code==="KeyR"){energy=100;toast("Энергия восстановлена")}
+ if(e.code==="KeyG"){
+  if(inside?.type==="garage")interactInside();
+  else toast("Найди гараж и войди внутрь");
+ }
+});
+addEventListener("keyup",e=>keys[e.code]=false);
+addEventListener("blur",()=>{for(const k in keys)keys[k]=false});
+canvas.addEventListener("mousedown",e=>{if(e.button===0)useWeapon()});
+document.querySelectorAll("#shopPanel [data-buy]").forEach(button=>{
+ button.addEventListener("click",()=>buyItem(button.dataset.buy));
+});
+document.querySelector('#shopPanel [data-action="rob"]').addEventListener("click",robShop);
+document.querySelector('#shopPanel [data-action="close"]').addEventListener("click",closeShop);
+
+selectWeapon(1);
+updateMissionHUD();
+loop();
+})();
+</script>
+</body>
+</html>
